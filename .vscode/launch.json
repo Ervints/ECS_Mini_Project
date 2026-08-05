@@ -1,0 +1,31 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "cppdbg",
+            "MIMode":"gdb",
+            "request": "launch",
+            "name": "Attach to gdbserver",
+            "program": "${fileDirname}\\${fileBasenameNoExtension}.elf",
+            "cwd": "${workspaceRoot}",
+            "miDebuggerPath": "C:\\SysGCC\\raspberry\\bin\\arm-linux-gnueabihf-gdb.exe",
+            "externalConsole": true,
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                },
+                {
+                    "text": "target extended-remote 192.168.0.104:2020"
+                },
+                {
+                    "text": "set remote exec-file /tmp/${fileBasenameNoExtension}.elf"
+                }
+            ]
+        }
+    ]
+}

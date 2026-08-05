@@ -1,0 +1,56 @@
+
+{     "tasks": [
+        {
+            "label": "Build active file",
+            "type": "shell",
+            "command": "C:\\SysGCC\\raspberry\\bin\\arm-linux-gnueabihf-gcc.exe",
+            "args": [
+                "-lwiringPi",
+                "-lm",
+                "-pthread",
+                "-g",
+                "$(get-item",
+                ".\\*.c)",
+                "-o",
+                "${fileDirname}\\${fileBasenameNoExtension}.elf"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            //"group": "build",
+            "problemMatcher": [
+                "$gcc"
+            ]
+        },
+        {
+            "label": "Build & Start gdbserver",
+            "type": "shell",
+            "command": "echo y|C:\\PuTTY\\plink.exe -ssh pi@192.168.0.104 -pw raspberry gdbserver --multi 192.168.0.104:2020",
+            "dependsOrder": "sequence",
+            "dependsOn": [
+                "Kill gdbserver",
+                "Build active file",
+                "Set run"
+            ],
+            "group": "build",
+            "problemMatcher": []
+        },
+        {
+            "label": "Kill gdbserver",
+            "type": "shell",
+            "command": "echo y|C:\\PuTTY\\plink.exe -ssh pi@192.168.0.104 -pw raspberry 'killall gdbserver || echo 'No gdbserver''",
+            //"group" : "build"
+        },
+        {
+            "label": "Set run",
+            "type": "shell",
+            "command": "echo y|C:\\PuTTY\\plink.exe -ssh pi@192.168.0.104 -pw raspberry chmod +x /tmp/${fileBasenameNoExtension}.elf"
+        },
+        {
+            "label": "Shutdown CM3",
+            "type": "shell",
+            "command": "echo y|C:\\PuTTY\\plink.exe -ssh pi@192.168.0.104 -pw raspberry sudo shutdown now",
+        }
+    ],
+    "version": "2.0.0"
+}

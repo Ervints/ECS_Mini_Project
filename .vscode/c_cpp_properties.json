@@ -1,0 +1,22 @@
+{
+    "configurations": [
+        {
+            "name": "Win32",
+            "includePath": [],
+            "forcedInclude": [],
+            "defines": [
+                "_DEBUG",
+                "UNICODE",
+                "_UNICODE"
+            ],
+            "intelliSenseMode": "gcc-arm",
+            "compilerPath": "C:\\SysGCC\\raspberry\\bin\\arm-linux-gnueabihf-gcc",
+            "browse": {
+                "path": [],
+                "limitSymbolsToIncludedHeaders": true,
+                "databaseFilename": ""
+            }
+        }
+    ],
+    "version": 4
+}
