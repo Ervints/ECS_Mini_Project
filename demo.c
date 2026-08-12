@@ -20,6 +20,7 @@
 int i,reading,h;
 char inp;
 int full_seq_drive[4] = {0x08, 0x04, 0x02, 0x01};
+unsigned char cw_seq[4] = {0x01, 0x02, 0x04, 0x08};   // clockwise
 
 int anti_clockwise[4][4] = {
 	{0,0,0,1},
@@ -83,6 +84,8 @@ void lcddata(unsigned char cmd);
 unsigned char ProcKey();
 unsigned char ScanKey();
 unsigned char ScanCode;
+void rotate_stepper(int clockwise, int seconds);
+void rotate_stepper_ms(int clockwise, int ms);
 
 /* void* thread_dac(void* value)
 {
@@ -421,14 +424,27 @@ void *pouring_m_image_thread(void *arg)
 	return NULL;
 }
 
+void *sd_flap_thread(void *arg)
+{
+	// vending machine flap open close
+	rotate_stepper_ms(1, 500);   // open  CW  0.5s
+	rotate_stepper_ms(0, 500);   // close ACW 0.5s
+	return NULL;
+}
+
 void dispense_sd(void) {
 	pthread_t sid;
+	pthread_t fid;
 	pthread_create(&sid, NULL, sd_image_thread, NULL);
 	usleep(2000);
+
+	// start the flap while vending sound plays
+	pthread_create(&fid, NULL, sd_flap_thread, NULL);
+
 	{
 		FILE *clankptr;
-		unsigned char clankbuf[8];
-		size_t bytes_read;
+		unsigned char clankbuf[1];
+		int clankend;
 
 		clankptr = fopen("/tmp/vending.raw", "r");
 
@@ -439,9 +455,11 @@ void dispense_sd(void) {
 		}
 		else
 		{
-			while ((bytes_read = fread(clankbuf, 1, sizeof(clankbuf), clankptr)) > 0)
+			while ((clankend = fgetc(clankptr)) != EOF)
 			{
-				for (size_t k = 0; k < bytes_read; k++)
+
+				fread(clankbuf, sizeof(clankbuf), 8, clankptr);
+				for (int k = 0; k < 1; k++)
 				{
 					CM3PortWrite(3, clankbuf[k]);
 				}
@@ -449,17 +467,23 @@ void dispense_sd(void) {
 			fclose(clankptr);
 		}
 	}
+
+	pthread_join(fid, NULL);
 	pthread_join(sid, NULL);
 }
 
-void dispense_coffee_tea_no_milk(void) {
+void dispense_coffee_tea_no_milk(int open_dir) {
 	pthread_t ctnmid;
 	pthread_create(&ctnmid, NULL, pouring_nm_image_thread, NULL);
 	usleep(2000);
+
+	// open drink flap 3s
+	rotate_stepper(open_dir, 3);
+
 	{
 		FILE *clankptr;
-		unsigned char clankbuf[8];
-		size_t bytes_read;
+		unsigned char clankbuf[1];
+		int clankend;
 
 		clankptr = fopen("/tmp/pouring.raw", "r");
 
@@ -470,9 +494,11 @@ void dispense_coffee_tea_no_milk(void) {
 		}
 		else
 		{
-			while ((bytes_read = fread(clankbuf, 1, sizeof(clankbuf), clankptr)) > 0)
+			while ((clankend = fgetc(clankptr)) != EOF)
 			{
-				for (size_t k = 0; k < bytes_read; k++)
+
+				fread(clankbuf, sizeof(clankbuf), 8, clankptr);
+				for (int k = 0; k < 1; k++)
 				{
 					CM3PortWrite(3, clankbuf[k]);
 				}
@@ -480,11 +506,15 @@ void dispense_coffee_tea_no_milk(void) {
 			fclose(clankptr);
 		}
 	}
+
+	// close drink flap 1s after pouring
+	rotate_stepper(!open_dir, 1);
+
 	usleep(2000);
 	{
 		FILE *clankptr;
-		unsigned char clankbuf[8];
-		size_t bytes_read;
+		unsigned char clankbuf[1];
+		int clankend;
 
 		clankptr = fopen("/tmp/beepindicator.raw", "r");
 
@@ -495,9 +525,11 @@ void dispense_coffee_tea_no_milk(void) {
 		}
 		else
 		{
-			while ((bytes_read = fread(clankbuf, 1, sizeof(clankbuf), clankptr)) > 0)
+			while ((clankend = fgetc(clankptr)) != EOF)
 			{
-				for (size_t k = 0; k < bytes_read; k++)
+
+				fread(clankbuf, sizeof(clankbuf), 8, clankptr);
+				for (int k = 0; k < 1; k++)
 				{
 					CM3PortWrite(3, clankbuf[k]);
 				}
@@ -508,14 +540,18 @@ void dispense_coffee_tea_no_milk(void) {
 	pthread_join(ctnmid, NULL);
 }
 
-void dispense_coffee_tea_milk(void) {
+void dispense_coffee_tea_milk(int open_dir) {
 	pthread_t ctmid;
 	pthread_create(&ctmid, NULL, pouring_m_image_thread, NULL);
 	usleep(2000);
+
+	// open drink flap 3s
+	rotate_stepper(open_dir, 3);
+
 	{
 		FILE *clankptr;
-		unsigned char clankbuf[8];
-		size_t bytes_read;
+		unsigned char clankbuf[1];
+		int clankend;
 
 		clankptr = fopen("/tmp/pouring.raw", "r");
 
@@ -526,9 +562,11 @@ void dispense_coffee_tea_milk(void) {
 		}
 		else
 		{
-			while ((bytes_read = fread(clankbuf, 1, sizeof(clankbuf), clankptr)) > 0)
+			while ((clankend = fgetc(clankptr)) != EOF)
 			{
-				for (size_t k = 0; k < bytes_read; k++)
+
+				fread(clankbuf, sizeof(clankbuf), 8, clankptr);
+				for (int k = 0; k < 1; k++)
 				{
 					CM3PortWrite(3, clankbuf[k]);
 				}
@@ -536,11 +574,19 @@ void dispense_coffee_tea_milk(void) {
 			fclose(clankptr);
 		}
 	}
+
+	// close drink flap 1s after pouring
+	rotate_stepper(!open_dir, 1);
+
+	// milk (2s total)
+	rotate_stepper_ms(1, 1000);   // open  CW  ~1s
+	rotate_stepper_ms(0, 1000);   // close ACW ~1s
+
 	usleep(2000);
 	{
 		FILE *clankptr;
-		unsigned char clankbuf[8];
-		size_t bytes_read;
+		unsigned char clankbuf[1];
+		int clankend;
 
 		clankptr = fopen("/tmp/beepindicator.raw", "r");
 
@@ -551,9 +597,11 @@ void dispense_coffee_tea_milk(void) {
 		}
 		else
 		{
-			while ((bytes_read = fread(clankbuf, 1, sizeof(clankbuf), clankptr)) > 0)
+			while ((clankend = fgetc(clankptr)) != EOF)
 			{
-				for (size_t k = 0; k < bytes_read; k++)
+
+				fread(clankbuf, sizeof(clankbuf), 8, clankptr);
+				for (int k = 0; k < 1; k++)
 				{
 					CM3PortWrite(3, clankbuf[k]);
 				}
@@ -563,6 +611,84 @@ void dispense_coffee_tea_milk(void) {
 	}
 	pthread_join(ctmid, NULL);
 }
+
+// ---- Stepper motor drive one-phase-on ----
+// clockwise: clockwise = 1, anti-clockwise = 0. 
+// 100 steps per second at 10 ms per step.
+void rotate_stepper(int clockwise, int seconds)
+{
+	int steps = seconds * 100;
+	int p = 0;
+	int s;
+	unsigned char out;
+
+	// settle
+	usleep(100000);
+
+	for (s = 0; s < steps; s++)
+	{
+		if (clockwise)
+		{
+			out = cw_seq[p];
+		}
+		else
+		{
+			
+			// phase A,B,C,D -> 0x01,0x02,0x04,0x08
+			out = (anti_clockwise[p][0] * 0x01) | (anti_clockwise[p][1] * 0x02)
+			    | (anti_clockwise[p][2] * 0x04) | (anti_clockwise[p][3] * 0x08);
+		}
+
+		pthread_mutex_lock(&bus_lock);
+		CM3_outport(SMPort, out);
+		pthread_mutex_unlock(&bus_lock);
+		usleep(10000);
+		p++;
+		if (p >= 4) p = 0;
+	}
+
+	// stop
+	pthread_mutex_lock(&bus_lock);
+	CM3_outport(SMPort, 0x00);
+	pthread_mutex_unlock(&bus_lock);
+	usleep(100000);
+}
+
+
+// quick stepper snappy open/close
+void rotate_stepper_ms(int clockwise, int ms)
+{
+	int steps = ms / 10;   // 10 ms per step
+	int p = 0;
+	int s;
+	unsigned char out;
+
+	for (s = 0; s < steps; s++)
+	{
+		if (clockwise)
+		{
+			out = cw_seq[p];
+		}
+		else
+		{
+			out = (anti_clockwise[p][0] * 0x01) | (anti_clockwise[p][1] * 0x02)
+			    | (anti_clockwise[p][2] * 0x04) | (anti_clockwise[p][3] * 0x08);
+		}
+
+		pthread_mutex_lock(&bus_lock);
+		CM3_outport(SMPort, out);
+		pthread_mutex_unlock(&bus_lock);
+		usleep(10000);
+		p++;
+		if (p >= 4) p = 0;
+	}
+
+	// stop
+	pthread_mutex_lock(&bus_lock);
+	CM3_outport(SMPort, 0x00);
+	pthread_mutex_unlock(&bus_lock);
+}
+
 
 void* thread_keypad(void* value)
 {
@@ -728,7 +854,7 @@ void* thread_keypad(void* value)
 						break;
 					}
 					else if (verified == 1) {
-						dispense_coffee_tea_no_milk();
+						dispense_coffee_tea_no_milk(1);   // coffee: open CW, close ACW
 						usleep(2000);
 						system("killall -q pqiv; DISPLAY=:0.0 pqiv -f /tmp/menu.jpg &");
 					}
@@ -744,7 +870,7 @@ void* thread_keypad(void* value)
 						break;
 					}
 					else if (verified == 1) {
-						dispense_coffee_tea_milk();
+						dispense_coffee_tea_milk(1);   // coffee: open CW, close ACW (+ milk flap)
 						usleep(2000);
 						system("killall -q pqiv; DISPLAY=:0.0 pqiv -f /tmp/menu.jpg &");
 						lcd_writecmd(0x01);
@@ -800,7 +926,7 @@ void* thread_keypad(void* value)
 						break;
 					}
 					else if (verified == 1) {
-						dispense_coffee_tea_no_milk();
+						dispense_coffee_tea_no_milk(0);   // tea: open ACW, close CW
 						usleep(2000);
 						system("killall -q pqiv; DISPLAY=:0.0 pqiv -f /tmp/menu.jpg &");
 						lcd_writecmd(0x01);
@@ -819,7 +945,7 @@ void* thread_keypad(void* value)
 						break;
 					}
 					else if (verified == 1) {
-						dispense_coffee_tea_milk();
+						dispense_coffee_tea_milk(0);   // tea: open ACW, close CW (+ milk flap)
 						usleep(2000);
 						lcd_writecmd(0x01);
 						LCDprint("Welcome");
