@@ -427,8 +427,8 @@ void dispense_sd(void) {
 	usleep(2000);
 	{
 		FILE *clankptr;
-		unsigned char clankbuf[1];
-		int clankend;
+		unsigned char clankbuf[8];
+		size_t bytes_read;
 
 		clankptr = fopen("/tmp/vending.raw", "r");
 
@@ -439,11 +439,9 @@ void dispense_sd(void) {
 		}
 		else
 		{
-			while ((clankend = fgetc(clankptr)) != EOF)
+			while ((bytes_read = fread(clankbuf, 1, sizeof(clankbuf), clankptr)) > 0)
 			{
-
-				fread(clankbuf, sizeof(clankbuf), 8, clankptr);
-				for (int k = 0; k < 1; k++)
+				for (size_t k = 0; k < bytes_read; k++)
 				{
 					CM3PortWrite(3, clankbuf[k]);
 				}
@@ -460,8 +458,8 @@ void dispense_coffee_tea_no_milk(void) {
 	usleep(2000);
 	{
 		FILE *clankptr;
-		unsigned char clankbuf[1];
-		int clankend;
+		unsigned char clankbuf[8];
+		size_t bytes_read;
 
 		clankptr = fopen("/tmp/pouring.raw", "r");
 
@@ -472,11 +470,9 @@ void dispense_coffee_tea_no_milk(void) {
 		}
 		else
 		{
-			while ((clankend = fgetc(clankptr)) != EOF)
+			while ((bytes_read = fread(clankbuf, 1, sizeof(clankbuf), clankptr)) > 0)
 			{
-
-				fread(clankbuf, sizeof(clankbuf), 8, clankptr);
-				for (int k = 0; k < 1; k++)
+				for (size_t k = 0; k < bytes_read; k++)
 				{
 					CM3PortWrite(3, clankbuf[k]);
 				}
@@ -487,8 +483,8 @@ void dispense_coffee_tea_no_milk(void) {
 	usleep(2000);
 	{
 		FILE *clankptr;
-		unsigned char clankbuf[1];
-		int clankend;
+		unsigned char clankbuf[8];
+		size_t bytes_read;
 
 		clankptr = fopen("/tmp/beepindicator.raw", "r");
 
@@ -499,11 +495,9 @@ void dispense_coffee_tea_no_milk(void) {
 		}
 		else
 		{
-			while ((clankend = fgetc(clankptr)) != EOF)
+			while ((bytes_read = fread(clankbuf, 1, sizeof(clankbuf), clankptr)) > 0)
 			{
-
-				fread(clankbuf, sizeof(clankbuf), 8, clankptr);
-				for (int k = 0; k < 1; k++)
+				for (size_t k = 0; k < bytes_read; k++)
 				{
 					CM3PortWrite(3, clankbuf[k]);
 				}
@@ -520,8 +514,8 @@ void dispense_coffee_tea_milk(void) {
 	usleep(2000);
 	{
 		FILE *clankptr;
-		unsigned char clankbuf[1];
-		int clankend;
+		unsigned char clankbuf[8];
+		size_t bytes_read;
 
 		clankptr = fopen("/tmp/pouring.raw", "r");
 
@@ -532,11 +526,9 @@ void dispense_coffee_tea_milk(void) {
 		}
 		else
 		{
-			while ((clankend = fgetc(clankptr)) != EOF)
+			while ((bytes_read = fread(clankbuf, 1, sizeof(clankbuf), clankptr)) > 0)
 			{
-
-				fread(clankbuf, sizeof(clankbuf), 8, clankptr);
-				for (int k = 0; k < 1; k++)
+				for (size_t k = 0; k < bytes_read; k++)
 				{
 					CM3PortWrite(3, clankbuf[k]);
 				}
@@ -547,8 +539,8 @@ void dispense_coffee_tea_milk(void) {
 	usleep(2000);
 	{
 		FILE *clankptr;
-		unsigned char clankbuf[1];
-		int clankend;
+		unsigned char clankbuf[8];
+		size_t bytes_read;
 
 		clankptr = fopen("/tmp/beepindicator.raw", "r");
 
@@ -559,11 +551,9 @@ void dispense_coffee_tea_milk(void) {
 		}
 		else
 		{
-			while ((clankend = fgetc(clankptr)) != EOF)
+			while ((bytes_read = fread(clankbuf, 1, sizeof(clankbuf), clankptr)) > 0)
 			{
-
-				fread(clankbuf, sizeof(clankbuf), 8, clankptr);
-				for (int k = 0; k < 1; k++)
+				for (size_t k = 0; k < bytes_read; k++)
 				{
 					CM3PortWrite(3, clankbuf[k]);
 				}
@@ -1008,7 +998,3 @@ unsigned char ProcKey()
 
 	return (0);
 }
-
-
-
-
